@@ -1,0 +1,104 @@
+=encoding utf8
+
+=head1 NAME
+
+eth0 - Perl IRC bot with hot code swap
+
+=head1 DESCRIPTION
+
+eth0 is an IRC bot, written in Perl, using L<POE::Component::IRC>. 
+Originally written to manage a small IRC channel for ethup.se on the 
+service less network Linknet, but should be easy to deploy to other 
+organizations/channels. To write own rules, some experience of Perl is 
+expected. All rules are (except !reload) located in eth0::IRC::Command.
+Documentation for writing new rules are available in eth0::IRC::Command.
+
+=head2 FEATURE HILIGHTS
+
+=over
+
+=item Hot code swap
+
+Define or change rules wihtout killing the bot. Just issue a reload command
+to the bot, and it should report if the reload was successful, and if it 
+was, start using the new rules.
+
+=item Governing multiple channels at once
+
+You can define several channels the bot should live in (as long as they are
+on the same network/server). It still uses the same backend and auth 
+engine, though.
+
+=item Authentication and mode setting
+
+The reason of existance for the bot; eth0 was written for Linknet, a 
+network not using services as Nickserv and Chanserv. As long as the bot
+has +o on the channel, it can give modes to other users, after they
+identify to the bot. The procedure should be familiar to users of networks
+that do use services.
+
+=back
+
+=head1 CONFIGURATION
+
+The configuration file is located in F</etc/eth0/config.yaml>. An example
+config is distributed with the code in F<doc/>. 
+
+=head1 HISTORY
+
+eth0 is a member of a proud lineage of IRC bots, governing the sanctuary
+of #ethup on Linknet. Its ancestors have primarily been written in Perl,
+just like this, but there have been incarnations written in C and Erlang
+as well.
+
+=head1 BUGS
+
+I bet you could find some, and if you do, be sure to contact me, either
+on IRC (zibri on Linknet, Freenode, OFTC, IRCnet, Efnet, Quakenet, 
+irc.perl.org, etc) or by mail (olof@ethup.se)!
+
+=head1 TODO
+
+There are some new features that I would like to implement, including:
+
+=over 
+
+=item * Web UI to manipulate user data
+
+I have begun working on a web interface to let the users update password,
+nickname etc themselves. This is written using CGI::Application. (I would
+have used Catalyst, but current versions are unfortunetly not packaged for
+Debian Lenny. I'm not sure if this will be distributed together with the
+bot --- as it is written now, it's just a cgi script doing a little SQL
+queries on requests.
+
+=item * Handling external events
+
+This would enable you (me? us?) to hook the bot up to an RSS reader, RT
+queue monitor, nagios or something totally different. Only your 
+imagination is the limit, and mine sucks at the moment.
+
+=item * Plain text backend engine
+
+Instead of using MySQL as the bot backend, implementing a backend only
+dealing with plaintext files. I'm leaning towards YAML as that's what
+the configuration uses, but XML would probably do it as well. This has
+the advantage that you (the admin) can modify it manually without any
+knowledge of SQL, and more importantly, it doesn't require a fat MySQL
+server.
+
+=back 
+
+But before this is happening, I want to be satisfied by the base 
+functionality. 
+
+=head1 AUTHOR
+
+eth0 was written by Olof Johansson (zibri), olof@ethup.se. För svenskar
+som vill idla med mig rekommenderar jag #archlinux.se (bra mötesplats 
+även för oss som använder bättre distar än Arch ;-)).
+
+=head1 DISTRIBUTION
+
+You can always download the latest released version, as well as development
+versions at L<http://ethup.se/eth0/>.

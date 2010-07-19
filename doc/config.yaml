@@ -1,0 +1,20 @@
+bot: 
+    nick: ethb0t
+    user: eth0bot
+    realname: ethup bot (admin: your contact details)
+
+backend:
+    backend: MySQL
+    host: localhost
+    database: botdb
+    username: eth0bot
+    password: supersecret
+
+server:
+    host: irc.example.org
+    port: 7000
+    ssl: 1
+
+channels:
+    - chan: "#ethup"
+
