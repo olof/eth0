@@ -90,7 +90,15 @@ server.
 =back 
 
 But before this is happening, I want to be satisfied by the base 
-functionality. 
+functionality. The following items are B<pressing> issues:
+
+=over
+
+=item Only authorized users should be able to do !reload
+
+=item Add license headers (GNU APL?)
+
+=back
 
 =head1 AUTHOR
 
