@@ -143,4 +143,4 @@ sub cmd_reload {
 	$irc->yield(privmsg => $to => $msg) if defined $who;
 }
 
-"allahu akbar";
+'hej då, små vänner';
