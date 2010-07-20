@@ -13,7 +13,6 @@ sub public {
 
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $chan, $msg) },
-		88 => sub { cmd_88($irc, $chan) },
 		reload  => sub { cmd_reload($irc, $chan) },
 	);
 
@@ -56,11 +55,6 @@ sub cmd_echo {
 		my ($irc, $who) = @_;
 		$irc->yield(privmsg => $who => "$who: $msg" );
 	}
-}
-
-sub cmd_88 {
-	my ($irc, $chan) = @_;
-	$irc->yield(privmsg => $chan => "All makt åt Tengil, vår befriare" );
 }
 
 sub cmd_identify {
