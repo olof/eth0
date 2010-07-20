@@ -16,5 +16,5 @@ sub conf { $conf } # get the conf object by accessing main::conf();
 
 my $be = eth0::Backend->new(conf=>$conf);
 my $auth = eth0::Auth->new(backend=>$be, conf=>$conf);
-eth0::IRC->execute($conf, $be, $auth);
+eth0::IRC->execute($be, $auth);
 
