@@ -1,4 +1,11 @@
 #!/usr/bin/perl
+# Copyright 2010, Olof Johansson <olof@ethup.se>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved.  This file is offered as-is,
+# without any warranty.
+
 use warnings;
 use strict;
 package eth0::IRC;
