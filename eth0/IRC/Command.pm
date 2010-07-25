@@ -6,6 +6,53 @@
 # notice and this notice are preserved.  This file is offered as-is,
 # without any warranty.
 
+=head1 eth0::IRC::Command
+
+This module is the primary way to create new rules and commands. When a 
+private message is received the B<private()> subroutine is called, and when 
+a public message is received the B<public()> subroutine is called. Other 
+events will probably be added eventually, but these two are usually the 
+most important when writing a bot. How you organize this module is totally 
+up to you, but the example module could be used as a basis for your rules 
+and modifications. 
+
+B<private()> and B<public()> are almost identicial, the arguments they are
+given only differ on one point: B<public()> also gets the channel in which
+the message was given. The arguments are as follows:
+
+=over
+
+=item * $irc
+
+The POE::Component::IRC object, used to interact with the IRC session. See
+the manual for POE::Component::IRC for information on how it's used.
+
+=item * $auth
+
+The eth0::Auth object, used to validate authentication details and get user
+information.
+
+=item * $be
+
+The eth0::Backend object
+
+=item * $who
+
+Usermask of the sender of the command/message
+
+=item * $chan 
+
+The channel in which the message was sent; this is only present in public()
+messages.
+
+=item * $msg
+
+The actual message/command
+
+=back
+
+=cut
+
 use warnings;
 use strict;
 package eth0::IRC::Command;
