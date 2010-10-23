@@ -54,6 +54,7 @@ The actual message/command
 =cut
 
 use warnings;
+no warnings qw/redefine/;
 use strict;
 package eth0::IRC::Command;
 
@@ -62,12 +63,13 @@ my $conf = main::conf();
 sub public {
 	my($irc, $auth, $be, $who, $chan, $msg) = @_;
 
-	my($cmd) = $msg =~ /^!(\S+)/;
+	print "$conf->{bot}->{nick}\n";
+	my($cmd) = $msg =~ /^(?:! | $conf->{bot}->{nick} [,:]\s*) (\S+)/x;
 	my($nick) = split /!/, $who;
+	print "$cmd\n";
 
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $chan, $msg) },
-		reload  => sub { cmd_reload($irc, $chan) },
 	);
 
 	return $cmds{$cmd}->() if(exists $cmds{$cmd});
@@ -80,14 +82,13 @@ sub private {
 	my($nick) = split /!/, $who;
 
 	my %cmds = (
-		default => sub { cmd_default($irc, $who, $cmd) },
 		echo => sub { cmd_echo($irc, $nick, $msg) },
 		identify => sub {cmd_identify($irc, $auth, $who, $msg)},
 		reload  => sub { cmd_reload($irc, $nick) },
 	);
 
 	return $cmds{$cmd}->() if(exists $cmds{$cmd});
-	return $cmds{default}->();
+	return $cmds{default}->($irc, $nick, $cmd);
 }
 
 sub cmd_default {
@@ -100,7 +101,7 @@ sub cmd_default {
 
 sub cmd_echo {
 	my $msg = pop @_;
-	$msg=~s/^!?echo *//;
+	($msg) = $msg =~ /echo\s+(.*)$/;
 
 	if(@_ == 3) {
 		my ($irc, $who, $chan) = @_;

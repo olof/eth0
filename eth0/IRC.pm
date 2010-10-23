@@ -18,11 +18,13 @@ use eth0::Auth;
 my $be;
 my $auth;
 my $irc;
-my $conf = main::conf();
+my $conf;
 
 sub execute {
 	my $self = shift;
 	($be, $auth) = @_;
+
+	$conf = main::conf();
 
 	$irc = POE::Component::IRC->spawn(
 		Nick => $conf->{bot}->{nick},
@@ -37,12 +39,14 @@ sub execute {
 	POE::Session->create(
 		package_states => [
 			'eth0::IRC' => [qw{
+				_default
 				_start 
 				irc_001 
 				irc_372
 				irc_public 
 				irc_msg
 				irc_snotice
+				irc_socketerr
 				irc_disconnected
 			}],
 		],
@@ -89,7 +93,7 @@ sub irc_public {
 
 	eth0::IRC::Command::public(
 		$irc, $auth, $be, $who, $where, $msg
-	) if $msg =~ /^!.+/;
+	);
 }
 
 sub irc_msg {
@@ -104,6 +108,12 @@ sub irc_msg {
 	eth0::IRC::Command::private($irc, $auth, $be, $who, $msg);
 }
 
+sub irc_socketerr {
+	my ($sender, $what) = @_[SENDER, ARG0];
+	print "socket error: $what\n";
+	$irc->shutdown;
+}
+
 sub irc_snotice {
 	my ($sender, $what) = @_[SENDER, ARG0];
 	print "snotice: $what\n";
@@ -111,7 +121,12 @@ sub irc_snotice {
 
 sub irc_372 {
 	my ($sender, $serv, $what) = @_[SENDER, ARG0, ARG1];	
-	print "$what\n";
+	print "372: $what\n";
+}
+
+sub irc_quit {
+	my ($sender, $who, $msg) = @_[SENDER, ARG0, ARG1];	
+	# if $who is authed, disauth.
 }
 
 sub irc_disconnected {
