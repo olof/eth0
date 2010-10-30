@@ -93,21 +93,101 @@ my @random = (
 	'cock shit fuck',
 );
 
+sub classify_msg {
+	my $msg = shift;
+
+	my @classes = ( 
+		{
+			class=>'cmd',
+			f=> sub { 
+				my $a = shift;
+				$a =~ qr/^(?:
+					! | 
+					$conf->{bot}->{nick} [,:]\s* \S+
+				)/x 
+			},
+		}, {
+			class=>'88',
+			f=> sub {
+				my $a = shift;
+				$a =~ qr/^\s*88\b/
+			},
+		}, {
+			class=>'random',
+			f=> sub {
+				my $a = shift;
+				length($a) % 10 == 0;
+			},
+		},
+	);
+
+	foreach my $c (@classes) {
+		return $c->{class} if $c->{f}->($msg);
+	}
+
+	return undef;
+}
+
 sub public {
 	my($irc, $auth, $be, $who, $chan, $msg) = @_;
 	my($nick) = split /!/, $who;
 
-	if($msg=~/^\s*88\s*$/ and $nick ne 'zibri') {
-		my $m = "$nick: ".$threats[int(rand(@threats))];
-		ircsay($irc, $chan, $m);
-		return;
-	} elsif(length($msg) % 10 == 0) {
-		my $m = $random[int(rand(@random))];
-		ircsay($irc, $chan, $m);
-		return;
-	}
+	my %classes = (
+		cmd => sub { 
+			public_cmd($irc, $auth, $be, $who, $chan, $msg) 
+		},
+		88 => sub { 
+			my $m = "$nick: ".$threats[int(rand(@threats))];
+			ircsay($irc, $chan, $m);
+			return;
+		},
+		random => sub {
+			my $m = $random[int(rand(@random))];
+			ircsay($irc, $chan, $m);
+			return;
+		},
+	);
 
-	my($cmd) = $msg =~ /^(?:! | $conf->{bot}->{nick} [,:]\s*) (\S+)/x;
+	my $class = classify_msg($msg);
+
+	return $classes{$class}->() if exists $classes{$class};
+}
+
+sub private {
+	my($irc, $auth, $be, $who, $msg) = @_;
+	my($nick) = split /!/, $who;
+
+	my %classes = (
+		cmd => sub { 
+			private_cmd($irc, $auth, $be, $who, $msg) 
+		},
+		88 => sub { 
+			my $m = "$nick: ".$threats[int(rand(@threats))];
+			ircsay($irc, $nick, $m);
+			return;
+		},
+		random => sub {
+			my $m = $random[int(rand(@random))];
+			ircsay($irc, $nick, $m);
+			return;
+		},
+	);
+
+	my $class = classify_msg($msg);
+	$class //= 'cmd';
+
+	return $classes{$class}->() if exists $classes{$class};
+}
+
+sub public_cmd {
+	my($irc, $auth, $be, $who, $chan, $msg) = @_;
+	my($nick) = split /!/, $who;
+
+	my($cmd) = $msg =~ qr/^(?:
+		! | 
+		$conf->{bot}->{nick} [,:]\s* (\S+)
+	)/x;
+
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $chan, $msg) },
 	);
@@ -115,21 +195,14 @@ sub public {
 	return $cmds{$cmd}->() if(defined $cmd and exists $cmds{$cmd});
 }
 
-sub private {
-	my($irc, $auth, $be, $who, $msg) = @_;
-
-	my($cmd) = $msg =~ /^(\S+)/;
+sub private_cmd {
+	my($irc, $auth, $be, $who, $chan, $msg) = @_;
 	my($nick) = split /!/, $who;
 
-	if($msg=~/^\s*88\s*$/) {
-		my $m = $threats[int(rand(@threats))];
-		ircsay($irc, $nick, $m);
-		return;
-	} elsif(length($msg) % 10 == 0) {
-		my $m = $random[int(rand(@random))];
-		ircsay($irc, $nick, $m);
-		return;
-	}
+	my($cmd) = $msg =~ qr/^(?:
+		! | 
+		$conf->{bot}->{nick} [,:]\s* (\S+)
+	)/x;
 
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $msg) },
@@ -138,7 +211,7 @@ sub private {
 		op => sub { cmd_op($irc, $auth, $nick) },
 	);
 
-	return $cmds{$cmd}->() if(exists $cmds{$cmd});
+	return $cmds{$cmd}->() if(defined $cmd and exists $cmds{$cmd});
 	return cmd_default($irc, $nick, $cmd);
 }
 
