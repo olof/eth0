@@ -45,6 +45,7 @@ sub execute {
 				irc_372
 				irc_public 
 				irc_msg
+				irc_quit
 				irc_snotice
 				irc_socketerr
 				irc_disconnected
@@ -67,9 +68,13 @@ sub _start {
 		)
 	);
 
+	if(do_cmd_reload() ne 'ok') {
+		die('Could not do the initial load of eth0::IRC::Command');
+		
+	}
+
 	$irc->yield( register => 'all' );
 	$irc->yield( connect => {} );
-	cmd_reload();
 
 	return;
 }
@@ -86,11 +91,6 @@ sub irc_001 {
 sub irc_public {
 	my ($sender, $who, $where, $msg) = @_[SENDER, ARG0 .. ARG2];
 
-	if($msg =~ /^!reload\s*/) {
-		cmd_reload($who, $where);
-		return;
-	}
-
 	eth0::IRC::Command::public(
 		$irc, $auth, $be, $who, $where, $msg
 	);
@@ -100,8 +100,7 @@ sub irc_msg {
 	my ($sender, $who, $me, $msg) = @_[SENDER, ARG0 .. ARG2];
 
 	if($msg =~ /^reload\s*/) {
-		my ($nick) = split /!/, $who;
-		cmd_reload($who, $nick);
+		cmd_reload($who, 0);
 		return;
 	}
 
@@ -126,6 +125,13 @@ sub irc_372 {
 
 sub irc_quit {
 	my ($sender, $who, $msg) = @_[SENDER, ARG0, ARG1];	
+	my ($nick) = split /!/, $who;
+	my $status = $auth->status($nick);
+
+	if(defined $status) {
+		$auth->del_status($nick);
+	}
+
 	# if $who is authed, disauth.
 }
 
@@ -151,18 +157,32 @@ sub _default {
 	return 0;
 }
 
-sub cmd_reload {
-	my ($who, $to) = @_;
-
+sub do_cmd_reload {
 	delete $INC{'eth0/IRC/Command.pm'};
-	my $msg = 'Reload successful.';
 
 	unless( eval { require eth0::IRC::Command } ) {
 		warn $@;
-		$msg = 'Reload failed. See stdout.';
+		return 'not ok';
 	}
 
-	$irc->yield(privmsg => $to => $msg) if defined $who;
+	'ok';
+}
+
+sub cmd_reload {
+	my ($who) = @_;
+	my ($nick) = split /!/, $who;
+	my $status = $auth->status($nick);
+	my $msg = 'Reload successful.';
+
+	if(not defined $status or $status != 3) {
+		$msg = 'You are not authorized to do this.';
+	} else {
+		if(do_cmd_reload() ne 'ok') {
+			$msg = 'Reload failed. See stdout.';
+		}
+	}
+
+	$irc->yield(privmsg => $nick => $msg) if defined $who;
 }
 
 'hej då, små vänner';

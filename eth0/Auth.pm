@@ -17,6 +17,7 @@ sub new {
 	my $class = shift;
 	my $self = {
 		@_,
+		status=>{}
 	};
 
 	if(not defined $self->{backend}) {
@@ -26,22 +27,54 @@ sub new {
 	bless $self, $class;
 }
 
-sub mode {
+sub authen {
 	my $self = shift;
-	my ($nick, $pass) = @_;
-	my $hash = sha256_hex(sha256_hex($nick.$pass));
+	my ($nick, $realnick, $pass) = @_;
+	#my $hash = sha256_hex(sha256_hex($nick.$pass));
+	#$hash = $pass;
+	
+	my $e = $self->{backend}->verify($realnick, $pass);
+	return 'authfail' if $e != 1;
+	$self->{status}->{$nick} = $self->level($realnick);
+	return 'ok';
+}
 
-	if((my $authstatus = $self->{backend}->verify($nick, $hash)) ne 1) {
-		return $authstatus;
-	}
+sub status {
+	my $self = shift;
+	my ($nick) = @_;
 
-	my $mode = $self->{backend}->mode($nick, $hash);
+	$self->{status}->{$nick};
+}
 
-	if($mode eq 'o' or $mode eq 'v') {
-		return $mode;
-	}
+sub del_status {
+	my $self = shift;
+	my ($nick) = @_;
 
-	return undef;
+	delete $self->{status}->{$nick};
+}
+
+sub ircmode {
+	my $self = shift;
+	my ($nick) = @_;
+
+	my $level = $self->level($nick);
+	return undef unless defined $level;
+
+	my %modes = (
+		1 => 'v',
+		2 => 'o',
+		3 => 'o',
+	);
+
+	return undef unless exists $modes{$level};
+	return $modes{$level};
+}
+
+sub level {
+	my $self = shift;
+	my ($nick) = @_;
+
+	$self->{backend}->level($nick);
 }
 
 1;

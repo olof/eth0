@@ -28,20 +28,16 @@ sub new {
 	bless $self, $class;
 }
 
-sub mode {
+sub level {
 	my $self = shift;
 	my($nick, $pass) = @_;
-	return $self->{be}->get_ircmode($nick, $pass);
+	$self->{be}->level($nick, $pass);
 }
 
 sub verify {
 	my $self = shift;
 	my ($nick, $pass) = @_;
-	my $ret = $self->mode($nick, $pass);
-
-	return $ret if $ret eq 'authfail';
-	return $ret if $ret eq 'miscfail';
-	return 1;
+	$self->{be}->verify($nick, $pass);
 }
 
 1;

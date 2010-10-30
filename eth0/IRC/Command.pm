@@ -57,22 +57,62 @@ use warnings;
 no warnings qw/redefine/;
 use strict;
 package eth0::IRC::Command;
+use POSIX qw/strftime/;
 
 my $conf = main::conf();
+my $loadtime = time;
+
+my @threats = (
+	"I'm gonna rape you in your mouth",
+	"I'm gonna take you out and fuck you in the streets",
+	"Your mother has a smooth forehead",
+	"Yo poppa so stupid he studied for a drug test!",
+	"Yo Mom so stupid that Oxford had to change the definition of Dumb... it now read: Dumb(n) - yo' Mama",
+	"If yo Momma n Poppa got a divorce, heck, they'd still be Brother and Sister",
+	'Are you still an ALCOHOLIC?',
+	'Eat shit -- billions of flies can\'t be wrong.',
+	'Go play in traffic',
+	'Fuck you and anybody who looks like you.',
+	'Nu passar du dig; du är ute på hal is och cyklar!',
+);
+
+my @random = (
+	'I was making donuts and now I\'m on a bus!',
+	'All this time I\'ve been VIEWING a RUSSIAN MIDGET SODOMIZE a HOUSECAT!',
+	'Now KEN and BARBIE are PERMANENTLY ADDICTED to MIND-ALTERING DRUGS',
+	'I joined scientology at a garage sale!!',
+	'Did I say I was a sardine?  Or a bus???',
+	'Could I have a drug overdose?',
+	'Wow!  Look!!  A stray meatball!!  Let\'s interview it!',
+	'Save the whales.  Club a seal instead.',
+	'Nuke the unborn gay female whales for Jesus.',
+	'The hell with the prime directive!  Let\'s kill something!',
+	'Sometimes it happens.  People just explode.  Natural causes.',
+	'Never hit a man with glasses; hit him with a baseball bat.',
+	'Just don\'t create a file called -rf.  :-)',
+	'cock shit fuck',
+);
 
 sub public {
 	my($irc, $auth, $be, $who, $chan, $msg) = @_;
-
-	print "$conf->{bot}->{nick}\n";
-	my($cmd) = $msg =~ /^(?:! | $conf->{bot}->{nick} [,:]\s*) (\S+)/x;
 	my($nick) = split /!/, $who;
-	print "$cmd\n";
 
+	if($msg=~/^\s*88\s*$/ and $nick ne 'zibri') {
+		my $m = "$nick: ".$threats[int(rand(@threats))];
+		ircsay($irc, $chan, $m);
+		return;
+	} elsif(length($msg) % 10 == 0) {
+		my $m = $random[int(rand(@random))];
+		ircsay($irc, $chan, $m);
+		return;
+	}
+
+	my($cmd) = $msg =~ /^(?:! | $conf->{bot}->{nick} [,:]\s*) (\S+)/x;
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $chan, $msg) },
 	);
 
-	return $cmds{$cmd}->() if(exists $cmds{$cmd});
+	return $cmds{$cmd}->() if(defined $cmd and exists $cmds{$cmd});
 }
 
 sub private {
@@ -81,14 +121,30 @@ sub private {
 	my($cmd) = $msg =~ /^(\S+)/;
 	my($nick) = split /!/, $who;
 
+	if($msg=~/^\s*88\s*$/) {
+		my $m = $threats[int(rand(@threats))];
+		ircsay($irc, $nick, $m);
+		return;
+	} elsif(length($msg) % 10 == 0) {
+		my $m = $random[int(rand(@random))];
+		ircsay($irc, $nick, $m);
+		return;
+	}
+
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $msg) },
 		identify => sub {cmd_identify($irc, $auth, $who, $msg)},
-		reload  => sub { cmd_reload($irc, $nick) },
+		status => sub { cmd_status($irc, $auth, $nick) },
+		op => sub { cmd_op($irc, $auth, $nick) },
 	);
 
 	return $cmds{$cmd}->() if(exists $cmds{$cmd});
-	return $cmds{default}->($irc, $nick, $cmd);
+	return cmd_default($irc, $nick, $cmd);
+}
+
+sub ircsay {
+	my($irc, $chan, $msg) = @_;
+	$irc->yield(privmsg=>$chan=>$msg);
 }
 
 sub cmd_default {
@@ -112,6 +168,23 @@ sub cmd_echo {
 	}
 }
 
+sub cmd_status {
+	my $self;
+	my ($irc, $auth, $who) = @_;
+	my $status = $auth->status($who);
+
+	if(not defined $status) {
+		ircsay($irc, $who, 'This requires authentication.'); 
+		return;
+	} elsif($status != 3) {
+		ircsay($irc, $who, 'Current status: I\'m absing'); 
+		return;
+	}
+
+	my $str = strftime '%Y-%m-%d %H:%M:%S %Z', localtime $loadtime;
+	$irc->yield(privmsg=>$who=>"loaded: $str");
+}
+
 sub cmd_identify {
 	my ($irc, $auth, $who, $cmd) = @_;
 
@@ -119,11 +192,9 @@ sub cmd_identify {
 	my $nick;
 	my $pass;
 	
-	if($cmd=~/^identify +(\S+) +(\S+) *$/) {
-		$nick = $1;
-		$pass = $2;
+	if($cmd=~/^identify +(\S+) +(\S+) *$/) { $nick = $1; $pass = $2;
 	} elsif($cmd=~/^identify +(\S+) *$/) {
-		($nick) = $snick;
+		$nick = $snick;
 		$pass = $1;
 	} else {
 		$irc->yield(privmsg => $snick => 
@@ -133,28 +204,35 @@ sub cmd_identify {
 		return;
 	}
 
-	my $mode = $auth->mode($nick, $pass);
-
-	if(not defined $mode) {
-		$irc->yield(privmsg => $snick => 
-			"error: undef" 
-		);
-	} elsif($mode eq 'miscfail') {
-		$irc->yield(privmsg => $snick => 
-			"error: misc" 
-		);
-	} elsif($mode eq 'authfail') {
-		$irc->yield(privmsg => $snick => 
-			"error: incorrect username/password" 
-		);
-	} else {
-		$irc->yield(privmsg => $snick => 
-			"success: welcome, $snick (+$mode)" 
+	my $a = $auth->authen($snick, $nick, $pass);
+	if($a ne 'ok') {
+		my %errmsgs = (
+			authfail=>'incorrect username/password',
+			miscfail=>'misc',
 		);
 
-		foreach(@{$conf->{channels}}) {
-			$irc->yield(mode => $_->{chan} => "+$mode $snick");
-		}
+		$a = 'miscfail' unless exists $errmsgs{$a};
+		$irc->yield(privmsg=>$snick=>"error: undef $errmsgs{$a}");
+		return;
+	}
+	
+	my $mode = $auth->ircmode($nick);
+	return unless defined $mode;
+
+	$irc->yield(privmsg => $snick => "success: welcome, $snick (+$mode)");
+
+	cmd_op($irc, $auth, $snick);
+}
+
+sub cmd_op {
+	my ($irc, $auth, $nick) = @_;
+
+	return unless $auth->status($nick);
+	my $mode = $auth->ircmode($nick);
+	return unless $mode;
+
+	foreach(@{$conf->{channels}}) {
+		$irc->yield(mode => $_->{chan} => "+$mode $nick");
 	}
 }
 
