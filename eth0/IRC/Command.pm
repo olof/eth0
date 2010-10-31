@@ -139,18 +139,15 @@ sub public {
 		88 => sub { 
 			my $m = "$nick: ".$threats[int(rand(@threats))];
 			ircsay($irc, $chan, $m);
-			return;
 		},
 		random => sub {
 			my $m = $random[int(rand(@random))];
 			ircsay($irc, $chan, $m);
-			return;
 		},
 	);
 
-	my $class = classify_msg($msg);
-
-	return $classes{$class}->() if exists $classes{$class};
+	my $class = classify_msg($msg) or return;
+	$classes{$class}->() if exists $classes{$class};
 }
 
 sub private {
@@ -173,9 +170,7 @@ sub private {
 		},
 	);
 
-	my $class = classify_msg($msg);
-	$class //= 'cmd';
-
+	my $class = classify_msg($msg) // 'cmd';
 	return $classes{$class}->() if exists $classes{$class};
 }
 
