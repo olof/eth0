@@ -10,9 +10,31 @@ eth0 is an IRC bot, written in Perl, using L<POE::Component::IRC>.
 Originally written to manage a small IRC channel for ethup.se on the 
 service less network Linknet, but should be easy to deploy to other 
 organizations/channels. To write own rules, some experience of Perl is 
-expected. All rules are (except !reload) located in 
-eth0::IRC::Command. Documentation for writing new rules are available 
-in eth0::IRC::Command.  
+expected. All rules (except reload) are located in eth0::IRC::Command. 
+Documentation for writing new rules are available in eth0::IRC::Command. 
+
+=head2 BASIC USAGE
+
+The bot joins the channel(s) you've configured it to join. Give it op,
+and then let it idle. The example Command.pm will spit out random 
+statements and rudeness on various conditions, so please disable this
+if you don't like it :-).
+
+When the bot is online you will have access to it's interface (as 
+defined by you in Commands.pm). By default, the bot identifies 
+commands as something starting with an exclamation mark (!) or as 
+being directed towards the bot:
+
+ <@zibri> eth0: echo test
+ <@eth0> zibri: test
+
+or 
+
+ <@zibri> !echo test
+ <@eth0> zibri: test
+
+This should be easily changeable in Commands.pm. Please see 
+Commands.pm for more details.
 
 =head2 FEATURE HILIGHTS
 
@@ -20,7 +42,7 @@ in eth0::IRC::Command.
 
 =item Hot code swap
 
-Define or change rules wihtout killing the bot. Just issue a reload 
+Define or change rules without killing the bot. Just issue a reload 
 command to the bot, and it should report if the reload was successful, 
 and if it was, start using the new rules.
 
@@ -32,7 +54,7 @@ and auth engine, though.
 
 =item Authentication and mode setting
 
-The reason of existance for the bot; eth0 was written for Linknet, a 
+The reason of existence for the bot; eth0 was written for Linknet, a 
 network not using services as Nickserv and Chanserv. As long as the 
 bot has +o on the channel, it can give modes to other users, after 
 they identify to the bot. The procedure should be familiar to users of 
@@ -56,7 +78,7 @@ written in C and Erlang as well.
 
 I bet you could find some, and if you do, be sure to contact me, 
 either on IRC (zibri on Linknet, Freenode, OFTC) or by mail 
-(olof@ethup.se)!
+(olof@ethup.se)! 
 
 =head1 TODO
 
@@ -64,29 +86,33 @@ There are some new features that I would like to implement, including:
 
 =over 
 
-=item * Web UI to manipulate user data
-
-I have begun working on a web interface to let the users update 
-password, nickname etc themselves. This is written using 
-CGI::Application. (I would have used Catalyst, but current versions 
-are unfortunetly not packaged for Debian Lenny. I'm not sure if this 
-will be distributed together with the bot --- as it is written now, 
-it's just a cgi script doing a little SQL queries on requests.
-
 =item * Handling external events
 
 This would enable you (me? us?) to hook the bot up to an RSS reader, 
 RT queue monitor, nagios or something totally different. Only your 
-imagination is the limit, and mine sucks at the moment.
+imagination is the limit, and mine sucks at the moment. This would
+require the bot to somehow interrupt PoCo's event loop... I'm very
+interested in this feature, and is high on my list.
 
 =item * Plain text backend engine
 
-Instead of using MySQL as the bot backend, implementing a backend only
-dealing with plaintext files. I'm leaning towards YAML as that's what
-the configuration uses, but XML would probably do it as well. This has
-the advantage that you (the admin) can modify it manually without any
-knowledge of SQL, and more importantly, it doesn't require a fat MySQL
-server.
+We now use DBIx::Class ORM for our database access. This is nice, as
+we now can support "all" DBH:s that DBI can support (I think?). I want
+to test using the bot with only a sqlite database, as if this is 
+possible, it would be easy to make a quick deployment without 
+requiring a large DBMS running. 
+
+But still, this makes the bot depend on DBI and DBIx::Class when you 
+could probably hold all your config in some kind of configuration 
+file. This will make it trivial to do manual updates to the persistent
+data and removes the dependencies. I'm leaning towards using YAML, as
+this is used for the configuration file, but one thing doesn't exclude
+other if there is a demand for, e.g. an XML or CSV backend. 
+
+=item * Unit testing?
+
+I would like to investigate the feasibility of writing a test suite
+for the bot.
 
 =back 
 
@@ -97,7 +123,8 @@ functionality. The following items are B<pressing> issues:
 
 =item Only authorized users should be able to do !reload
 
-This is done. Needs some testing though...
+This is done, more or less. Needs some testing though... And perhaps
+some cleaning up.
 
 =item Install scripts and documentation
 
@@ -109,5 +136,6 @@ eth0 was written by Olof Johansson (zibri), olof@ethup.se.
 
 =head1 DISTRIBUTION
 
-You can always download the latest released version, as well as 
-development versions at L<http://ethup.se/eth0/>.
+The latest information on means of distribution is found at 
+L<http://ethup.se/eth0/>, where you should be able to find links
+to the latest stable and development versions. 
