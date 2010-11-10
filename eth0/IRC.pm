@@ -11,7 +11,11 @@ use strict;
 package eth0::IRC;
 
 use Config::YAML;
-use POE qw/Component::IRC Component::IRC::Plugin::CTCP/;
+use POE qw/
+	Component::IRC 
+	Component::IRC::Plugin::CTCP
+	Component::IRC::Plugin::Connector
+/;
 use eth0::Backend;
 use eth0::Auth;
 
@@ -49,6 +53,7 @@ sub execute {
 				irc_snotice
 				irc_socketerr
 				irc_disconnected
+				lag_o_meter
 			}],
 		],
 		heap => { irc => $irc },
@@ -58,14 +63,17 @@ sub execute {
 }
 
 sub _start {
-	my $heap = $_[HEAP];
+	my ($heap, $kernel) = @_[HEAP, KERNEL];
 	my $irc = $heap->{irc};
+
+	$heap->{connector} = POE::Component::IRC::Plugin::Connector->new();
 
 	$irc->plugin_add(
 		'CTCP' => POE::Component::IRC::Plugin::CTCP->new(
 			version => 'eth0-0.1',
 			userinfo => 'eth0',
-		)
+		),
+		'Connector' => $heap->{connector},
 	);
 
 	if(do_cmd_reload() ne 'ok') {
@@ -75,8 +83,15 @@ sub _start {
 
 	$irc->yield( register => 'all' );
 	$irc->yield( connect => {} );
+	$kernel->delay('lag_o_meter'=>60);
 
 	return;
+}
+
+sub lag_o_meter {
+	my ($kernel, $heap) = @_[KERNEL, HEAP];
+	print "Time: ", time(), ", lag: ", $heap->{connector}->lag(), "\n";
+	$kernel->delay('lag_o_meter'=>60);
 }
 
 sub irc_001 {
