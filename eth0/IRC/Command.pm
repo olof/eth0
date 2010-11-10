@@ -116,7 +116,7 @@ sub classify_msg {
 			class=>'random',
 			f=> sub {
 				my $a = shift;
-				length($a) % 10 == 0;
+				length($a) % 20 == 0;
 			},
 		},
 	);
@@ -191,13 +191,10 @@ sub public_cmd {
 }
 
 sub private_cmd {
-	my($irc, $auth, $be, $who, $chan, $msg) = @_;
+	my($irc, $auth, $be, $who, $msg) = @_;
 	my($nick) = split /!/, $who;
 
-	my($cmd) = $msg =~ qr/^(?:
-		! | 
-		$conf->{bot}->{nick} [,:]\s* (\S+)
-	)/x;
+	my($cmd) = split / /, $msg;
 
 	my %cmds = (
 		echo => sub { cmd_echo($irc, $nick, $msg) },
