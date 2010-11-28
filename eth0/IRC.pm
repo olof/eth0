@@ -150,8 +150,6 @@ sub irc_quit {
 	if(defined $status) {
 		$auth->del_status($nick);
 	}
-
-	# if $who is authed, disauth.
 }
 
 sub irc_disconnected {
