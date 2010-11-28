@@ -106,9 +106,11 @@ sub irc_001 {
 sub irc_public {
 	my ($sender, $who, $where, $msg) = @_[SENDER, ARG0 .. ARG2];
 
-	eth0::IRC::Command::public(
-		$irc, $auth, $be, $who, $where, $msg
-	);
+	eval { 
+		eth0::IRC::Command::public(
+			$irc, $auth, $be, $who, $where, $msg
+		);
+	} or warn $@;
 }
 
 sub irc_msg {
@@ -119,7 +121,9 @@ sub irc_msg {
 		return;
 	}
 
-	eth0::IRC::Command::private($irc, $auth, $be, $who, $msg);
+	eval { 
+		eth0::IRC::Command::private($irc, $auth, $be, $who, $msg);
+	} or warn $@;
 }
 
 sub irc_socketerr {
